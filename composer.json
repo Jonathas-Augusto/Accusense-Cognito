@@ -23,5 +23,12 @@
             "name": "jonathas Augusto",
             "email": "jonathas_a.a@hotmail.com"
         }
-    ]
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Accusense\\Cognito\\AccusenseServiceProvider"
+            ]
+        }
+    }
 }
