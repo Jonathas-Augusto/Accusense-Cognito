@@ -9,9 +9,12 @@ use Ellaisys\Cognito\Auth\AuthenticatesUsers;
 use Accusense\Cognito\Exceptions\CognitoException;
 use Ellaisys\Cognito\Auth\SendsPasswordResetEmails;
 use Accusense\Cognito\Repositories\CognitoRepository;
+use Aws\CognitoIdentityProvider\Exception\CognitoIdentityProviderException;
 
 class CognitoService
 {
+    const LIMIT_RESET_PASSWORD = "LimitExceededException";
+
     use AuthenticatesUsers;
     use ChangePasswords;
     use SendsPasswordResetEmails;
@@ -42,13 +45,13 @@ class CognitoService
 
             throw new CognitoException($claim->original);
         }
-        
-        return $claim;
+
+        return $claim->getData();
     }
 
     public function sendResetCode(Request $request,string $usernameKey = 'email', bool $resetTypeCode = true, bool $isJsonResponse = true)
     {
-        $response = $this->sendResetLinkEmail(collect($request->all()), $usernameKey, $resetTypeCode, $isJsonResponse);
+        $response = $this->sendResetLinkEmail($request, $usernameKey, $resetTypeCode, $isJsonResponse);
 
         if ($response === false) {
             throw new CognitoException([
@@ -57,5 +60,29 @@ class CognitoService
             ]);
         }
         return $response;
+    }
+
+    public function resetPassword($code, $email, $password)
+    {
+        try {
+            $response = $this->repository->resetPassword($code, $email, $password);
+
+            if ($response == 'passwords.token') {
+                throw new CognitoException([
+                    'error' => 'Código de verificação ou email inválido',
+                    'code' => 'password.invalid.reset.code'
+                ]);
+            }
+
+            return $response;
+        } catch (CognitoIdentityProviderException $e) {
+            if($e->getAwsErrorCode() == self::LIMIT_RESET_PASSWORD) {
+                throw new CognitoException([
+                    'error' => 'Limite de tentativas para resetar a senha excedido',
+                    'code' => 'password.reset.limit'
+                ]);
+            }
+            throw $e;
+        }
     }
 }

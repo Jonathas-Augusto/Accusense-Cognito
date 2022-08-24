@@ -75,21 +75,24 @@ class LoginController extends Controller
     {
         try {
             $request->validate(['refreshToken' => 'required']);
-            
+
             $claim = $this->cognitoRepository->refreshToken($request->refreshToken);
 
-            $email = current(array_filter($claim['UserAttributes'], function ($attribute) {
-                return $attribute['Name'] === 'email';
-            }))['Value'];
+            $userCognitoData = array_reduce($claim['UserAttributes'], function($acc, $current) {
+                $acc[$current['Name']] = $current['Value'];
+                return $acc;
+            }, []);
 
+            //call user model and add in cacheData in user index.
             $cacheData = [
                 'token' => $claim['AccessToken'],
                 'data' => $claim,
-                'username' => $email
+                'username' => $userCognitoData['email'],
+                'sub' => $userCognitoData['sub'],
             ];
 
             $this->action->dispatch(SetSectionAction::class, $claim['AccessToken'], json_encode($cacheData), $claim['ExpiresIn']);
-            $this->action->dispatch(PushSectionGroupAction::class, $email, $claim['AccessToken']);
+            $this->action->dispatch(PushSectionGroupAction::class, $userCognitoData['email'], $claim['AccessToken']);
 
             return response()
                 ->json($cacheData);
@@ -97,7 +100,7 @@ class LoginController extends Controller
         } catch (CognitoIdentityProviderException $e) {
             return response()
                 ->json(['error' => $e->getAwsErrorMessage()], 400);
-        }catch (ValidationException $validator) {
+        } catch (ValidationException $validator) {
             return response()->json($validator->errors(), 422);
         } catch (Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 400);
@@ -108,7 +111,7 @@ class LoginController extends Controller
     {
         try {
             $request->validate(['refreshToken' => 'required']);
-            
+
             $this->cognitoRepository->revokeToken($request->refreshToken);
 
             return response()->noContent();
@@ -117,7 +120,7 @@ class LoginController extends Controller
         } catch (Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 400);
         }
-
+        
     }
 
     public function sendResetCode(Request $request)
@@ -147,7 +150,7 @@ class LoginController extends Controller
                 'password' => 'required'
             ]);
 
-            $response = $this->cognitoRepository->resetPassword($request->code, $request->email, $request->password);
+            $response = $this->cognitoService->resetPassword($request->code, $request->email, $request->password);
 
             if ($response === 'password.reset') {
                 return $this->login($request);
