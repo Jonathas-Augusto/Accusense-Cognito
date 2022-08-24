@@ -4,7 +4,6 @@ namespace Accusense\Cognito\Repositories;
 
 use Aws\Result;
 use Ellaisys\Cognito\AwsCognitoClient;
-use Accusense\Cognito\Exceptions\CognitoException;
 use Ellaisys\Cognito\Exceptions\InvalidTokenException;
 use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
 
@@ -24,16 +23,7 @@ class CognitoRepository
 
     public function resetPassword($code, $email, $password)
     {
-        $response = $this->client->resetPassword($code, $email, $password);
-
-        if ($response == 'passwords.token') {
-            throw new CognitoException([
-                'error' => 'Código de verificação ou email inválido',
-                'code' => 'password.invalid.reset.code'
-            ]);
-        }
-
-        return $response;
+        return $this->client->resetPassword($code, $email, $password);
     }
 
     public function revokeToken($refreshToken)
@@ -79,7 +69,7 @@ class CognitoRepository
 
         $result = $result->toArray()['AuthenticationResult'];
         $data = $client->getUser(['AccessToken' => $result['AccessToken']])->toArray();
-        
+
         $claim = [
             'AccessToken' => $result['AccessToken'],
             'ExpiresIn' => $result['ExpiresIn'],
