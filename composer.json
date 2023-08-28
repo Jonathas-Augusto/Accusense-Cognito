@@ -6,13 +6,13 @@
         "php": ">=7.4",
         "aws/aws-sdk-php": ">=3.227",
         "ellaisys/aws-cognito": ">=1.0",
-        "illuminate/support": ">=7.4",
-        "illuminate/routing": ">=7.4",
-        "illuminate/http": ">=7.4",
-        "illuminate/database": ">=7.4",
-        "illuminate/console": ">=7.4",
-        "illuminate/validation": ">=7.4",
-        "illuminate/collections": ">=7.4"
+        "illuminate/support": ">=5.8",
+        "illuminate/routing": ">=5.8",
+        "illuminate/http": ">=5.8",
+        "illuminate/database": ">=5.8",
+        "illuminate/console": ">=5.8",
+        "illuminate/validation": ">=5.8",
+        "illuminate/collections": ">=5.8"
     },
     "license": "MIT",
     "autoload": {
